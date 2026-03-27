@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DÖS OS — Drop 006</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;}
+
+.screen{position:fixed;inset:0;width:100%;height:100%;display:none;opacity:0;transition:opacity 0.5s;}
+.screen.visible{opacity:1;}
+
+/* ── CRT (screens 1 & 2 only) ── */
+@keyframes scanroll{0%{transform:translateY(0);}100%{transform:translateY(8px);}}
+@keyframes crtroll{0%{top:-10%;}100%{top:110%;}}
+#crt-scanlines{position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.3) 3px,rgba(0,0,0,0.3) 4px);pointer-events:none;z-index:9000;animation:scanroll 0.08s linear infinite;}
+#crt-vignette{position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,0.85) 100%);pointer-events:none;z-index:8999;}
+#crt-tint{position:fixed;inset:0;background:rgba(0,20,5,0.2);pointer-events:none;z-index:8998;}
+#crt-roll{position:fixed;left:0;right:0;height:3px;background:rgba(0,255,65,0.05);pointer-events:none;z-index:9001;animation:crtroll 6s linear infinite;}
+
+/* ════════════════════
+   SCREEN 1 — CONSOLE
+════════════════════ */
+#s-console{background:#000;flex-direction:column;justify-content:center;padding:2rem;font-family:'Share Tech Mono',monospace;}
+.bl{font-size:13px;line-height:1.9;color:#00ff41;opacity:0;transition:opacity 0.08s;text-shadow:0 0 8px rgba(0,255,65,0.9);}
+.bl.dim{color:#005c14;text-shadow:none;}
+.bl.bright{color:#ccffcc;text-shadow:0 0 10px rgba(180,255,190,0.95);}
+#con-pbar-wrap{width:60%;max-width:300px;height:2px;background:#003a10;margin:1.2rem 0 0.4rem;display:none;}
+#con-pbar{height:2px;background:#00ff41;width:0%;}
+#con-plabel{font-size:11px;color:#005c14;letter-spacing:0.1em;display:none;font-family:'Share Tech Mono',monospace;}
+
+/* ════════════════════
+   SCREEN 2 — SPLASH
+════════════════════ */
+#s-splash{background:#000;flex-direction:column;align-items:center;justify-content:center;}
+#win-flag{display:grid;grid-template-columns:1fr 6px 1fr;grid-template-rows:1fr 6px 1fr;width:80px;height:80px;margin-bottom:22px;transform:skewX(-8deg);}
+.pane{border-radius:2px;}
+.gap-cell{background:#000;}
+.p1{background:#e74c3c;box-shadow:0 0 12px 3px rgba(231,76,60,0.8),0 0 24px 6px rgba(231,76,60,0.4);}
+.p2{background:#27ae60;box-shadow:0 0 12px 3px rgba(39,174,96,0.8),0 0 24px 6px rgba(39,174,96,0.4);}
+.p3{background:#2980b9;box-shadow:0 0 12px 3px rgba(41,128,185,0.8),0 0 24px 6px rgba(41,128,185,0.4);}
+.p4{background:#f39c12;box-shadow:0 0 12px 3px rgba(243,156,18,0.8),0 0 24px 6px rgba(243,156,18,0.4);}
+#splash-title{font-family:'Arial Black',Arial,sans-serif;font-size:38px;font-weight:900;letter-spacing:0.05em;color:#fff;margin-bottom:3px;text-shadow:0 0 14px rgba(255,255,255,0.9),0 0 30px rgba(255,255,255,0.4);}
+#splash-sub{font-family:Arial,sans-serif;font-size:12px;color:#666;letter-spacing:0.22em;text-transform:uppercase;margin-bottom:4px;text-shadow:0 0 8px rgba(150,150,150,0.5);}
+#splash-members{font-family:Arial,sans-serif;font-size:10px;color:#005c14;letter-spacing:0.3em;text-transform:uppercase;margin-bottom:28px;}
+#splash-bar-wrap{width:220px;height:14px;border:1px solid #444;padding:2px;display:flex;gap:2px;background:#0a0a0a;}
+.seg{flex:1;height:100%;background:#0a0020;}
+.seg.lit{background:#0000aa;box-shadow:0 0 5px rgba(0,0,180,0.7);}
+#splash-copy{margin-top:12px;font-family:Arial,sans-serif;font-size:11px;color:#333;letter-spacing:0.05em;}
+
+/* ════════════════════
+   SCREEN 3 — DESKTOP
+════════════════════ */
+#s-desktop{
+  flex-direction:column;
+  background:linear-gradient(180deg,#4a8ec2 0%,#89bfdf 35%,#b8d9ee 60%,#d4eaf6 100%);
+  font-family:Arial,sans-serif;
+  overflow:hidden;
+}
+.cloud{position:absolute;background:rgba(255,255,255,0.82);border-radius:50%;filter:blur(16px);pointer-events:none;}
+
+/* icons */
+#icon-col{position:absolute;top:10px;left:6px;display:flex;flex-direction:column;gap:10px;z-index:10;}
+.d-icon{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:4px;width:76px;user-select:none;-webkit-tap-highlight-color:transparent;}
+.d-icon:active .icon-box{outline:1px dotted rgba(255,255,255,0.9);background:rgba(0,0,150,0.2);}
+.icon-box{width:56px;height:56px;display:flex;align-items:center;justify-content:center;font-size:36px;border-radius:2px;}
+.icon-label{font-size:11px;color:#fff;text-align:center;text-shadow:1px 1px 2px #000,0 0 4px #000;line-height:1.3;}
+
+/* taskbar */
+#taskbar{position:absolute;bottom:0;left:0;right:0;height:32px;background:#c0c0c0;border-top:2px solid #fff;display:flex;align-items:center;padding:0 3px;gap:2px;z-index:500;overflow:hidden;}
+#start-btn{height:24px;padding:0 8px;background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-size:11px;font-weight:bold;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;}
+#start-btn:active,#start-btn.open{border-color:#808080 #fff #fff #808080;background:#b0b0b0;}
+#tb-sep{width:1px;height:22px;background:#808080;margin:0 2px;flex-shrink:0;}
+.task-btn{height:24px;padding:0 6px;background:#b4b4b4;border:2px solid;border-color:#808080 #fff #fff #808080;font-size:10px;cursor:pointer;display:flex;align-items:center;gap:3px;white-space:nowrap;overflow:hidden;max-width:110px;flex-shrink:1;}
+#clock{margin-left:auto;height:24px;padding:0 8px;flex-shrink:0;background:#c0c0c0;border:2px solid;border-color:#808080 #fff #fff #808080;font-size:11px;display:flex;align-items:center;white-space:nowrap;}
+
+/* start menu */
+#start-menu{
+  position:absolute;bottom:32px;left:0;
+  width:200px;
+  background:#c0c0c0;
+  border:2px solid;border-color:#fff #808080 #808080 #fff;
+  box-shadow:3px 3px 0 #000;
+  z-index:600;
+  display:none;
+  flex-direction:row;
+}
+#start-menu-sidebar{
+  width:24px;
+  background:#808080;
+  display:flex;align-items:center;justify-content:center;
+  writing-mode:vertical-rl;
+  transform:rotate(180deg);
+  font-size:10px;font-weight:bold;color:#c0c0c0;
+  letter-spacing:0.15em;padding:8px 0;
+  font-family:Arial,sans-serif;
+  user-select:none;
+}
+#start-menu-items{flex:1;padding:2px 0;}
+.sm-item{
+  display:flex;align-items:center;gap:8px;
+  padding:5px 10px;font-size:12px;font-family:Arial,sans-serif;
+  cursor:pointer;color:#000;
+}
+.sm-item:hover{background:#000080;color:#fff;}
+.sm-icon{font-size:16px;width:20px;text-align:center;flex-shrink:0;}
+.sm-divider{height:1px;background:#808080;margin:3px 0;}
+
+/* generic window */
+.win{position:absolute;background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;box-shadow:3px 3px 0 #000;z-index:100;display:none;flex-direction:column;}
+.win.open{display:flex;}
+.win-title{background:linear-gradient(90deg,#000080,#1084d0);color:#fff;padding:4px 6px;display:flex;align-items:center;justify-content:space-between;user-select:none;cursor:default;flex-shrink:0;}
+.win-title-left{font-size:11px;font-weight:bold;display:flex;align-items:center;gap:5px;overflow:hidden;}
+.win-btns{display:flex;gap:2px;flex-shrink:0;}
+.wbtn{width:18px;height:16px;background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-size:9px;color:#000;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+.wbtn:active{border-color:#808080 #fff #fff #808080;}
+.win-menu{background:#c0c0c0;border-bottom:1px solid #808080;padding:1px 2px;display:flex;flex-shrink:0;}
+.mitem{padding:3px 8px;font-size:11px;cursor:pointer;}
+.mitem:hover{background:#000080;color:#fff;}
+
+/* drop window — responsive centered */
+#drop-win{
+  top:10px;
+  left:50%;
+  transform:translateX(-50%);
+  width:min(460px, calc(100vw - 80px));
+  max-height:calc(100% - 50px);
+}
+@media(max-width:480px){
+  #drop-win{
+    left:90px;
+    transform:none;
+    right:6px;
+    width:auto;
+  }
+}
+#drop-body{overflow-y:auto;-webkit-overflow-scrolling:touch;max-height:calc(100vh - 145px);padding:8px;}
+#drop-body::-webkit-scrollbar{width:14px;}
+#drop-body::-webkit-scrollbar-track{background:#c0c0c0;}
+#drop-body::-webkit-scrollbar-thumb{background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;}
+#win-inner{background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080;padding:12px;}
+
+.tx-header{background:#000080;color:#fff;padding:6px 10px;margin-bottom:10px;font-size:10px;letter-spacing:0.08em;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;}
+.tx-blink{animation:txblink 1.2s step-end infinite;}
+@keyframes txblink{50%{opacity:0;}}
+.member-badge{background:#006600;color:#fff;font-size:9px;padding:2px 6px;letter-spacing:0.1em;white-space:nowrap;}
+
+.w-name{font-size:24px;font-weight:900;color:#000080;line-height:1;margin-bottom:4px;}
+.w-badge{display:inline-block;background:#000080;color:#fff;font-size:10px;padding:2px 10px;margin-bottom:12px;}
+.w-section{margin-bottom:12px;}
+.w-label{font-size:10px;color:#808080;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;border-bottom:1px solid #e0e0e0;padding-bottom:2px;}
+.w-val{font-size:12px;color:#000;line-height:1.6;}
+.w-val.lore{font-style:italic;color:#333;}
+.w-hr{border:none;border-top:1px solid #c0c0c0;margin:10px 0;}
+.notes-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+.ntag{border:1px solid #000080;color:#000080;font-size:10px;padding:3px 8px;}
+
+.brew-tabs{display:flex;margin-bottom:10px;}
+.brew-tab{flex:1;padding:5px;text-align:center;font-size:11px;background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;cursor:pointer;}
+.brew-tab.active{background:#fff;border-color:#808080 #fff #fff #808080;font-weight:bold;color:#000080;}
+.brew-panel{display:none;}
+.brew-panel.active{display:block;}
+.brew-step{display:flex;gap:8px;margin-bottom:8px;align-items:flex-start;}
+.brew-num{width:20px;height:20px;background:#000080;color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:bold;margin-top:1px;}
+.brew-txt{font-size:12px;color:#000;line-height:1.5;}
+
+.w-auth{margin-top:10px;padding:6px 8px;background:#c0c0c0;border:2px solid;border-color:#808080 #fff #fff #808080;display:flex;align-items:center;gap:8px;}
+.auth-led{width:8px;height:8px;background:#00cc00;border:1px solid #006600;border-radius:50%;flex-shrink:0;box-shadow:0 0 4px #00cc00;}
+.auth-txt{font-size:10px;color:#000;line-height:1.4;}
+
+#drop-statusbar{border-top:2px solid;border-color:#808080 #fff #fff #808080;display:flex;flex-shrink:0;}
+.sb-panel{flex:1;padding:2px 5px;font-size:9px;color:#000;border-right:1px solid #808080;white-space:nowrap;overflow:hidden;}
+.sb-panel:last-child{border-right:none;}
+
+/* changelog */
+#changelog-win{top:30px;left:50%;transform:translateX(-50%);width:min(400px,calc(100vw - 80px));max-height:calc(100% - 60px);}
+@media(max-width:480px){#changelog-win{left:72px;transform:none;right:6px;width:auto;}}
+#changelog-body{padding:8px;overflow-y:auto;max-height:320px;-webkit-overflow-scrolling:touch;}
+#changelog-inner{background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080;padding:10px;}
+.cl-line{font-size:11px;line-height:1.9;color:#000;font-family:'Courier New',monospace;}
+.cl-line.head{color:#000080;font-weight:bold;margin-top:6px;}
+.cl-line.dim{color:#808080;}
+
+/* access denied */
+#denied-win{top:50%;left:50%;transform:translate(-50%,-50%);width:min(280px,calc(100% - 20px));}
+#denied-body{padding:14px;display:flex;gap:10px;align-items:flex-start;}
+.denied-icon{font-size:28px;flex-shrink:0;}
+.denied-text{font-size:12px;color:#000;line-height:1.6;}
+.denied-text strong{display:block;margin-bottom:4px;font-size:13px;}
+#denied-ok{display:block;margin:0 auto 10px;width:80px;height:26px;background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-size:12px;cursor:pointer;}
+#denied-ok:active{border-color:#808080 #fff #fff #808080;}
+
+/* beansweeper */
+#bean-win{top:30px;left:50%;transform:translateX(-50%);width:min(250px,calc(100% - 16px));}
+#bean-area{padding:6px;background:#c0c0c0;}
+#bean-info{display:flex;align-items:center;justify-content:space-between;background:#c0c0c0;border:2px solid;border-color:#808080 #fff #fff #808080;padding:4px 8px;margin-bottom:5px;}
+#bean-counter,#bean-timer{color:#c00;font-family:'Courier New',monospace;font-size:15px;font-weight:bold;}
+#bean-reset{cursor:pointer;font-size:16px;}
+#bean-grid{display:grid;border:2px solid;border-color:#808080 #fff #fff #808080;}
+.bcell{width:24px;height:24px;background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;user-select:none;font-weight:bold;}
+.bcell.revealed{background:#c0c0c0;border:1px solid #808080;cursor:default;}
+.bcell.boom{background:#f00;}
+.n1{color:#0000ff;}.n2{color:#008000;}.n3{color:#ff0000;}.n4{color:#000080;}.n5{color:#800000;}
+</style>
+</head>
+<body>
+
+<!-- CRT only on screens 1 & 2 -->
+<div id="crt-tint"></div>
+<div id="crt-scanlines"></div>
+<div id="crt-vignette"></div>
+<div id="crt-roll"></div>
+
+<!-- ═══ SCREEN 1: CONSOLE ═══ -->
+<div class="screen" id="s-console">
+  <div id="boot-lines"></div>
+  <div id="con-pbar-wrap"><div id="con-pbar"></div></div>
+  <div id="con-plabel"></div>
+</div>
+
+<!-- ═══ SCREEN 2: SPLASH ═══ -->
+<div class="screen" id="s-splash">
+  <div id="win-flag">
+    <div class="pane p1"></div><div class="gap-cell"></div><div class="pane p2"></div>
+    <div class="gap-cell"></div><div class="gap-cell"></div><div class="gap-cell"></div>
+    <div class="pane p3"></div><div class="gap-cell"></div><div class="pane p4"></div>
+  </div>
+  <div id="splash-title">DÖS OS</div>
+  <div id="splash-sub">Coffee Club Edition</div>
+  <div id="splash-members">Members Only Build</div>
+  <div id="splash-bar-wrap"></div>
+  <div id="splash-copy">© 2026 Dös Coffee Club</div>
+</div>
+
+<!-- ═══ SCREEN 3: DESKTOP ═══ -->
+<div class="screen" id="s-desktop">
+
+  <div class="cloud" style="width:220px;height:90px;top:-20px;left:15%;"></div>
+  <div class="cloud" style="width:180px;height:70px;top:10px;left:45%;"></div>
+  <div class="cloud" style="width:200px;height:80px;top:-10px;right:5%;"></div>
+  <div class="cloud" style="width:150px;height:60px;top:70px;left:58%;opacity:0.7;"></div>
+
+  <!-- ICONS -->
+  <div id="icon-col">
+    <div class="d-icon" onclick="window.open('https://instagram.com/doscoffeeclub','_blank')">
+      <div class="icon-box">
+        <svg width="48" height="48" viewBox="0 0 32 32" style="image-rendering:pixelated;" xmlns="http://www.w3.org/2000/svg">
+          <!-- camera body -->
+          <rect x="2" y="10" width="28" height="18" fill="#c0c0c0"/>
+          <rect x="3" y="11" width="26" height="16" fill="#808080"/>
+          <!-- top ridge -->
+          <rect x="6" y="7" width="10" height="4" fill="#c0c0c0"/>
+          <rect x="7" y="8" width="8" height="3" fill="#808080"/>
+          <!-- flash bump -->
+          <rect x="20" y="7" width="6" height="4" fill="#c0c0c0"/>
+          <rect x="21" y="8" width="4" height="3" fill="#ffff00"/>
+          <!-- lens outer -->
+          <rect x="10" y="13" width="12" height="12" rx="0" fill="#404040"/>
+          <!-- lens inner rings -->
+          <rect x="11" y="14" width="10" height="10" fill="#202020"/>
+          <rect x="12" y="15" width="8" height="8" fill="#303030"/>
+          <rect x="13" y="16" width="6" height="6" fill="#101010"/>
+          <!-- lens highlight -->
+          <rect x="13" y="16" width="2" height="2" fill="#ffffff" opacity="0.6"/>
+          <!-- shutter button -->
+          <rect x="22" y="11" width="4" height="2" fill="#e0e0e0"/>
+          <rect x="23" y="10" width="2" height="2" fill="#e0e0e0"/>
+          <!-- viewfinder -->
+          <rect x="4" y="12" width="4" height="3" fill="#404040"/>
+          <rect x="5" y="13" width="2" height="1" fill="#88aaff"/>
+        </svg>
+      </div>
+      <div class="icon-label">dos_gram.exe</div>
+    </div>
+    <div class="d-icon" onclick="openBeansweeper()">
+      <div class="icon-box">☕</div>
+      <div class="icon-label">beansweeper.exe</div>
+    </div>
+    <div class="d-icon" onclick="openDenied()">
+      <div class="icon-box">📁</div>
+      <div class="icon-label">classified.exe</div>
+    </div>
+    <div class="d-icon" onclick="openChangelog()">
+      <div class="icon-box">📄</div>
+      <div class="icon-label">changelog.txt</div>
+    </div>
+    <div class="d-icon" onclick="openRecycle()">
+      <div class="icon-box">🗑️</div>
+      <div class="icon-label">bad_coffee.exe</div>
+    </div>
+  </div>
+
+  <!-- DROP WINDOW -->
+  <div class="win open" id="drop-win">
+    <div class="win-title">
+      <div class="win-title-left">📡 SIGNAL_DECODED — DROP_006.exe</div>
+      <div class="win-btns">
+        <div class="wbtn" onclick="minimizeWin('drop-win','drop-task')">_</div>
+        <div class="wbtn" onclick="closeWin('drop-win','drop-task')">✕</div>
+      </div>
+    </div>
+    <div class="win-menu">
+      <span class="mitem">File</span>
+      <span class="mitem">Intel</span>
+      <span class="mitem">Protocol</span>
+      <span class="mitem">Help</span>
+    </div>
+    <div id="drop-body">
+      <div id="win-inner">
+        <div class="tx-header">
+          <span>TRANSMISSION RECEIVED — <span id="tx-time"></span></span>
+          <span class="member-badge">MEMBERS ONLY</span>
+          <span class="tx-blink">▌</span>
+        </div>
+        <div class="w-section">
+          <div class="w-label">Asset Designation</div>
+          <div class="w-name">EL PARAÍSO</div>
+          <div class="w-badge">Double Anaerobic Washed</div>
+        </div>
+        <div class="w-section">
+          <div class="w-label">Field Intelligence</div>
+          <div class="w-val lore">Asset located deep in the mountains of Huila, Colombia at 1,950 meters above sea level. Producer Diego Samuel Bermúdez Tapia has been operating Finca El Paraíso for over a decade, quietly engineering some of the most complex coffees on earth. This lot was intercepted at peak fermentation. Handle with care.</div>
+        </div>
+        <div class="w-section">
+          <div class="w-label">Origin Coordinates</div>
+          <div class="w-val">Huila, Colombia — 1,950 masl<br>Finca El Paraíso<br>Producer: Diego Samuel Bermúdez Tapia</div>
+        </div>
+        <div class="w-hr"></div>
+        <div class="w-section">
+          <div class="w-label">Sensory Analysis</div>
+          <div class="notes-row">
+            <div class="ntag">Passion Fruit</div>
+            <div class="ntag">Rose</div>
+            <div class="ntag">Dark Chocolate</div>
+            <div class="ntag">Lychee</div>
+          </div>
+        </div>
+        <div class="w-hr"></div>
+        <div class="w-section">
+          <div class="w-label">Preparation Protocol</div>
+          <div class="brew-tabs">
+            <div class="brew-tab active" onclick="switchBrew('filter',this)">Filter</div>
+            <div class="brew-tab" onclick="switchBrew('espresso',this)">Espresso</div>
+          </div>
+          <div class="brew-panel active" id="brew-filter">
+            <div class="brew-step"><div class="brew-num">01</div><div class="brew-txt"><strong>Ratio:</strong> 1:16 — 20g coffee to 320ml water</div></div>
+            <div class="brew-step"><div class="brew-num">02</div><div class="brew-txt"><strong>Grind:</strong> Medium-fine. Think coarse sand.</div></div>
+            <div class="brew-step"><div class="brew-num">03</div><div class="brew-txt"><strong>Temp:</strong> 200°F / 93°C. Just off boil.</div></div>
+            <div class="brew-step"><div class="brew-num">04</div><div class="brew-txt"><strong>Bloom:</strong> 40ml for 45 seconds. Let it breathe.</div></div>
+            <div class="brew-step"><div class="brew-num">05</div><div class="brew-txt"><strong>Pour:</strong> Slow circles. Total brew time 3:30.</div></div>
+            <div class="brew-step"><div class="brew-num">06</div><div class="brew-txt"><strong>Note:</strong> Let it cool slightly. The fruit opens up as temp drops.</div></div>
+          </div>
+          <div class="brew-panel" id="brew-espresso">
+            <div class="brew-step"><div class="brew-num">01</div><div class="brew-txt"><strong>Dose:</strong> 18g in, 36g out (1:2 ratio)</div></div>
+            <div class="brew-step"><div class="brew-num">02</div><div class="brew-txt"><strong>Grind:</strong> Fine. This coffee can run long — dial accordingly.</div></div>
+            <div class="brew-step"><div class="brew-num">03</div><div class="brew-txt"><strong>Temp:</strong> 200°F / 93°C. Don't go lower.</div></div>
+            <div class="brew-step"><div class="brew-num">04</div><div class="brew-txt"><strong>Time:</strong> 28–32 seconds. Watch for a syrupy pull.</div></div>
+            <div class="brew-step"><div class="brew-num">05</div><div class="brew-txt"><strong>Note:</strong> Hits different as a cortado. The rose and fruit really sing.</div></div>
+          </div>
+        </div>
+        <div class="w-hr"></div>
+        <div class="w-section">
+          <div class="w-label">Batch Intelligence</div>
+          <div class="w-val">Roast Date: March 2026<br>Roasted in Philadelphia, PA<br>Batch size: 40 units — Drop 006</div>
+        </div>
+        <div class="w-auth">
+          <div class="auth-led"></div>
+          <div class="auth-txt">AUTHENTICATED — NFC verified. Member access confirmed. Genuine Dös drop.</div>
+        </div>
+      </div>
+    </div>
+    <div id="drop-statusbar">
+      <div class="sb-panel">Drop 006 / 2026</div>
+      <div class="sb-panel">Member access: active</div>
+      <div class="sb-panel">doscoffeeclub.com</div>
+    </div>
+  </div>
+
+  <!-- CHANGELOG -->
+  <div class="win" id="changelog-win">
+    <div class="win-title">
+      <div class="win-title-left">📄 changelog.txt</div>
+      <div class="win-btns">
+        <div class="wbtn" onclick="closeWin('changelog-win',null)">✕</div>
+      </div>
+    </div>
+    <div id="changelog-body">
+      <div id="changelog-inner">
+        <div class="cl-line head">DÖS OS — Official Changelog</div>
+        <div class="cl-line dim">————————————————————</div>
+        <div class="cl-line head">v2.6.0 — March 2026</div>
+        <div class="cl-line">- Added El Paraíso drop support</div>
+        <div class="cl-line">- Fixed bug where coffee tasted bad</div>
+        <div class="cl-line">- Improved NFC authentication latency</div>
+        <div class="cl-line">- Removed decaf module entirely</div>
+        <div class="cl-line head">v2.5.1 — January 2026</div>
+        <div class="cl-line">- Patched exploit allowing non-members to access drop data</div>
+        <div class="cl-line">- Increased bloom time by 5 seconds</div>
+        <div class="cl-line">- Added Beansweeper (community request)</div>
+        <div class="cl-line head">v2.4.0 — October 2025</div>
+        <div class="cl-line">- Migrated origin database to Colombia servers</div>
+        <div class="cl-line">- Fixed crash caused by over-extraction</div>
+        <div class="cl-line">- Dark roast support permanently deprecated</div>
+        <div class="cl-line head">v1.0.0 — Initial Release</div>
+        <div class="cl-line">- Launched DÖS OS</div>
+        <div class="cl-line">- Nobody knew what this was yet</div>
+        <div class="cl-line dim">————————————————————</div>
+        <div class="cl-line dim">© 2026 Dös Coffee Club. All rights reserved.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACCESS DENIED -->
+  <div class="win" id="denied-win">
+    <div class="win-title">
+      <div class="win-title-left">🔒 classified.exe</div>
+      <div class="win-btns">
+        <div class="wbtn" onclick="closeWin('denied-win',null)">✕</div>
+      </div>
+    </div>
+    <div id="denied-body">
+      <div class="denied-icon">🚫</div>
+      <div class="denied-text">
+        <strong>ACCESS DENIED</strong>
+        Clearance level insufficient.<br><br>
+        This folder contains information beyond your current authorization. Contact Dös HQ if you believe this is an error.<br><br>
+        <em>Error code: COFFEE_TOO_CLASSIFIED</em>
+      </div>
+    </div>
+    <button id="denied-ok" onclick="closeWin('denied-win',null)">OK</button>
+  </div>
+
+  <!-- BEANSWEEPER -->
+  <div class="win" id="bean-win">
+    <div class="win-title">
+      <div class="win-title-left">☕ Beansweeper</div>
+      <div class="win-btns">
+        <div class="wbtn" onclick="minimizeWin('bean-win','bean-task')">_</div>
+        <div class="wbtn" onclick="closeWin('bean-win','bean-task')">✕</div>
+      </div>
+    </div>
+    <div id="bean-area">
+      <div id="bean-info">
+        <span id="bean-counter">010</span>
+        <span id="bean-reset" onclick="initBean()">😤</span>
+        <span id="bean-timer">000</span>
+      </div>
+      <div id="bean-grid"></div>
+    </div>
+  </div>
+
+  <!-- START MENU -->
+  <div id="start-menu">
+    <div id="start-menu-sidebar">DÖS OS</div>
+    <div id="start-menu-items">
+      <div class="sm-item" onclick="restoreWin('drop-win');closeStartMenu()"><span class="sm-icon">📡</span>Drop 006</div>
+      <div class="sm-item" onclick="window.open('https://instagram.com/doscoffeeclub','_blank');closeStartMenu()"><span class="sm-icon">📷</span>dos_gram.exe</div>
+      <div class="sm-item" onclick="openBeansweeper();closeStartMenu()"><span class="sm-icon">☕</span>Beansweeper</div>
+      <div class="sm-item" onclick="openChangelog();closeStartMenu()"><span class="sm-icon">📄</span>changelog.txt</div>
+      <div class="sm-item" onclick="openDenied();closeStartMenu()"><span class="sm-icon">📁</span>classified.exe</div>
+      <div class="sm-divider"></div>
+      <div class="sm-item" onclick="openRecycle();closeStartMenu()"><span class="sm-icon">🗑️</span>bad_coffee.exe</div>
+    </div>
+  </div>
+
+  <!-- TASKBAR -->
+  <div id="taskbar">
+    <button id="start-btn" onclick="toggleStartMenu()">⊞ Start</button>
+    <div id="tb-sep"></div>
+    <div class="task-btn" id="drop-task" onclick="restoreWin('drop-win')">📡 DROP_006</div>
+    <div id="clock">12:00 PM</div>
+  </div>
+
+</div><!-- end s-desktop -->
+
+<script>
+// ── SCREEN TRANSITIONS ──
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>{s.style.display='none';s.classList.remove('visible');});
+  const s=document.getElementById(id);
+  s.style.display='flex';
+  // hide CRT on desktop
+  const crtEls=['crt-scanlines','crt-vignette','crt-tint','crt-roll'];
+  crtEls.forEach(c=>{
+    const el=document.getElementById(c);
+    if(el)el.style.display=id==='s-desktop'?'none':'block';
+  });
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    s.classList.add('visible');
+    if(id==='s-splash')setTimeout(runSplash,400);
+    if(id==='s-desktop'){tick();setInterval(tick,1000);}
+  }));
+}
+
+// ── CONSOLE ──
+const LINES=[
+  {t:"DÖS OS  Version 2.6.0",c:"bright"},
+  {t:"Copyright (c) 2026 Dös Coffee Club",c:"dim"},
+  {t:"",c:""},
+  {t:"BIOS v2.6  —  NFC tag detected, signature verified",c:"dim"},
+  {t:"Initializing memory................  640K OK",c:""},
+  {t:"Loading kernel modules.............  OK",c:""},
+  {t:"Mounting origin database...........  OK",c:""},
+  {t:"Authenticating NFC signature.......  OK",c:""},
+  {t:"Verifying batch certificate........  OK",c:""},
+  {t:"Membership status..................  VERIFIED",c:""},
+  {t:"Decrypting producer record.........  OK",c:""},
+  {t:"",c:""},
+  {t:"Launching DÖS OS...",c:"bright"},
+];
+const PLABELS=["Reading drop metadata...","Verifying roast timestamp...","Loading tasting profile...","Authenticating origin...","Done."];
+const blWrap=document.getElementById('boot-lines');
+const cpw=document.getElementById('con-pbar-wrap');
+const cpb=document.getElementById('con-pbar');
+const cpl=document.getElementById('con-plabel');
+
+function showLine(i){
+  if(i>=LINES.length){cpw.style.display='block';cpl.style.display='block';runConProgress();return;}
+  const d=document.createElement('div');
+  d.className='bl '+(LINES[i].c||'');
+  d.textContent=LINES[i].t||'\u00a0';
+  blWrap.appendChild(d);
+  requestAnimationFrame(()=>{d.style.opacity='1';});
+  setTimeout(()=>showLine(i+1),LINES[i].t===''?120:i===0?80:180);
+}
+function runConProgress(){
+  let pct=0,li=0;cpl.textContent=PLABELS[0];
+  const iv=setInterval(()=>{
+    pct+=Math.random()*3+1;
+    if(pct>=100){pct=100;clearInterval(iv);setTimeout(()=>showScreen('s-splash'),500);return;}
+    cpb.style.width=pct+'%';
+    const ni=Math.min(Math.floor(pct/22),PLABELS.length-1);
+    if(ni!==li){li=ni;cpl.textContent=PLABELS[li];}
+  },100);
+}
+
+// ── SPLASH ──
+const SEG=18;
+const sbw=document.getElementById('splash-bar-wrap');
+for(let i=0;i<SEG;i++){const s=document.createElement('div');s.className='seg';s.id='seg'+i;sbw.appendChild(s);}
+function runSplash(){
+  let lit=0;
+  const iv=setInterval(()=>{
+    if(lit<SEG){document.getElementById('seg'+lit).classList.add('lit');lit++;}
+    else{clearInterval(iv);setTimeout(()=>showScreen('s-desktop'),700);}
+  },160);
+}
+
+// ── DESKTOP ──
+function tick(){
+  const n=new Date();let h=n.getHours(),m=n.getMinutes(),ap=h>=12?'PM':'AM';
+  h=h%12||12;
+  document.getElementById('clock').textContent=h+':'+(m<10?'0':'')+m+' '+ap;
+  const txEl=document.getElementById('tx-time');
+  if(txEl)txEl.textContent=n.toLocaleTimeString();
+}
+
+// start menu
+function toggleStartMenu(){
+  const sm=document.getElementById('start-menu');
+  const btn=document.getElementById('start-btn');
+  const isOpen=sm.style.display==='flex';
+  sm.style.display=isOpen?'none':'flex';
+  btn.classList.toggle('open',!isOpen);
+}
+function closeStartMenu(){
+  document.getElementById('start-menu').style.display='none';
+  document.getElementById('start-btn').classList.remove('open');
+}
+document.addEventListener('click',(e)=>{
+  if(!e.target.closest('#start-menu')&&!e.target.closest('#start-btn')){
+    closeStartMenu();
+  }
+});
+
+// window management
+function closeWin(id,taskId){
+  const w=document.getElementById(id);
+  w.style.display='none';w.classList.remove('open');
+  if(taskId){const t=document.getElementById(taskId);if(t)t.remove();}
+}
+function minimizeWin(id){
+  document.getElementById(id).style.display='none';
+}
+function restoreWin(id){
+  document.getElementById(id).style.display='flex';
+  closeStartMenu();
+}
+function switchBrew(type,el){
+  document.querySelectorAll('.brew-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.brew-panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('brew-'+type).classList.add('active');
+}
+function openRecycle(){alert('The Recycle Bin is empty.\n\nThere is no bad coffee here.');}
+function openDenied(){const w=document.getElementById('denied-win');w.style.display='flex';w.style.zIndex=300;}
+function openChangelog(){const w=document.getElementById('changelog-win');w.style.display='flex';w.style.zIndex=250;}
+function openBeansweeper(){
+  const w=document.getElementById('bean-win');w.style.display='flex';w.style.zIndex=200;
+  const tb=document.getElementById('taskbar');
+  if(!document.getElementById('bean-task')){
+    const btn=document.createElement('div');btn.className='task-btn';btn.id='bean-task';
+    btn.textContent='☕ Beans';btn.onclick=()=>restoreWin('bean-win');
+    tb.insertBefore(btn,document.getElementById('clock'));
+  }
+  if(!beanInited)initBean();
+}
+
+// ── BEANSWEEPER ──
+const ROWS=9,COLS=9,MINES=10;
+let beanBoard=[],beanRevealed=[],beanFlagged=[],beanGameOver=false,beanInited=false;
+let beanTimerVal=0,beanTimerInt=null,beanFirst=true;
+
+function initBean(){
+  beanBoard=[];beanRevealed=[];beanFlagged=[];
+  beanGameOver=false;beanFirst=true;
+  clearInterval(beanTimerInt);beanTimerVal=0;
+  document.getElementById('bean-timer').textContent='000';
+  document.getElementById('bean-reset').textContent='😤';
+  document.getElementById('bean-counter').textContent=String(MINES).padStart(3,'0');
+  for(let i=0;i<ROWS*COLS;i++){beanBoard.push(0);beanRevealed.push(false);beanFlagged.push(false);}
+  renderBean();beanInited=true;
+}
+function placeMines(safe){
+  let placed=0;
+  while(placed<MINES){
+    const i=Math.floor(Math.random()*ROWS*COLS);
+    if(i!==safe&&beanBoard[i]!==true){beanBoard[i]=true;placed++;}
+  }
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const i=r*COLS+c;if(beanBoard[i]===true)continue;
+    let cnt=0;
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+      const nr=r+dr,nc=c+dc;
+      if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&beanBoard[nr*COLS+nc]===true)cnt++;
+    }
+    beanBoard[i]=cnt;
+  }
+}
+function renderBean(){
+  const grid=document.getElementById('bean-grid');
+  grid.style.gridTemplateColumns=`repeat(${COLS},24px)`;
+  grid.innerHTML='';
+  for(let i=0;i<ROWS*COLS;i++){
+    const cell=document.createElement('div');cell.className='bcell';
+    if(beanRevealed[i]){
+      cell.classList.add('revealed');
+      if(beanBoard[i]===true){cell.textContent='☕';if(beanGameOver)cell.classList.add('boom');}
+      else if(beanBoard[i]>0){cell.textContent=beanBoard[i];cell.classList.add('n'+beanBoard[i]);}
+    }else if(beanFlagged[i]){cell.textContent='🚩';}
+    cell.addEventListener('click',()=>beanClick(i));
+    cell.addEventListener('contextmenu',(e)=>{e.preventDefault();beanFlag(i);});
+    grid.appendChild(cell);
+  }
+}
+function beanClick(i){
+  if(beanGameOver||beanRevealed[i]||beanFlagged[i])return;
+  if(beanFirst){
+    placeMines(i);beanFirst=false;
+    beanTimerInt=setInterval(()=>{
+      beanTimerVal++;
+      document.getElementById('bean-timer').textContent=String(Math.min(beanTimerVal,999)).padStart(3,'0');
+    },1000);
+  }
+  if(beanBoard[i]===true){
+    beanRevealed[i]=true;beanGameOver=true;clearInterval(beanTimerInt);
+    document.getElementById('bean-reset').textContent='😵';
+    for(let j=0;j<ROWS*COLS;j++)if(beanBoard[j]===true)beanRevealed[j]=true;
+    renderBean();return;
+  }
+  floodReveal(i);checkBeanWin();renderBean();
+}
+function floodReveal(i){
+  if(i<0||i>=ROWS*COLS||beanRevealed[i]||beanFlagged[i])return;
+  beanRevealed[i]=true;
+  if(beanBoard[i]===0){
+    const r=Math.floor(i/COLS),c=i%COLS;
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+      const nr=r+dr,nc=c+dc;
+      if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS)floodReveal(nr*COLS+nc);
+    }
+  }
+}
+function beanFlag(i){
+  if(beanGameOver||beanRevealed[i])return;
+  beanFlagged[i]=!beanFlagged[i];
+  const flagged=beanFlagged.filter(Boolean).length;
+  document.getElementById('bean-counter').textContent=String(MINES-flagged).padStart(3,'0');
+  renderBean();
+}
+function checkBeanWin(){
+  const unrevealed=beanRevealed.filter((r,i)=>!r&&beanBoard[i]!==true).length;
+  if(unrevealed===0){
+    beanGameOver=true;clearInterval(beanTimerInt);
+    document.getElementById('bean-reset').textContent='😎';
+    setTimeout(()=>alert('You cleared the beans! ☕\n\nNow go make a cup.'),100);
+  }
+}
+
+// ── INIT ──
+showScreen('s-console');
+showLine(0);
+</script>
+</body>
+</html>
